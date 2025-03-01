@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { useFormData } from "../contexts/FormContext";
 import axios from "axios";
+import Modal from "./Modal";
 
 function Step1({ onNext, onBack }) {
   const { formData, setFormData, errors, setErrors, checkValidation } =
     useFormData();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: "", message: "" });
 
   const onNextHandler = () => {
     checkRequiredFieldsFilled();
@@ -15,11 +18,9 @@ function Step1({ onNext, onBack }) {
       "general.control",
       "general.publisherName",
       "general.publisherCode",
-      "general.IPINumber",
       "contactAddress.phoneNumber",
       "contactAddress.contactName",
       "contactAddress.email",
-      "contactAddress.website",
       "contactAddress.correspondenceAddress",
       "contactAddress.province",
       "contactAddress.city",
@@ -50,15 +51,25 @@ function Step1({ onNext, onBack }) {
 
     const allRequiredFilled = requiredFields.every(isFilled);
 
-    if (allRequiredFilled) {
-      if (checkValidation()) {
-        onNext();
-      } else {
-        alert("Some field is not valid");
-      }
-    } else {
-      alert("Some field is required");
+    if (!allRequiredFilled) {
+      setModalContent({
+        title: "Warning!",
+        message: "Some fields are required.",
+      });
+      setIsModalOpen(true);
+      return;
     }
+
+    if (!checkValidation()) {
+      setModalContent({
+        title: "Validation Error",
+        message: "Some fields contain invalid data.",
+      });
+      setIsModalOpen(true);
+      return;
+    }
+
+    onNext();
   };
 
   const handleChange = (section, field, value, index = null) => {
@@ -822,6 +833,12 @@ function Step1({ onNext, onBack }) {
           </button>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={modalContent.title}
+        message={modalContent.message}
+      />
     </div>
   );
 }

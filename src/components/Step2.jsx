@@ -1,20 +1,30 @@
 import { useState } from "react";
 import { useFormData } from "../contexts/FormContext";
+import Modal from "./Modal";
+import { data } from "autoprefixer";
+import DataShow from "./DataShow";
 
 function Step2({ onNext, onBack }) {
   const { formData, setFormData, errors, setErrors, checkValidation } =
     useFormData();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: "", message: "" });
+
+  const [isModalOpen2, setIsModalOpen2] = useState(false);
+  const [modalContent2, setModalContent2] = useState({
+    title: "",
+    message: "",
+    data: null,
+  });
 
   const checkRequiredFieldsFilled = () => {
     const requiredFields = [
       "general.control",
       "general.publisherName",
       "general.publisherCode",
-      "general.IPINumber",
       "contactAddress.phoneNumber",
       "contactAddress.contactName",
       "contactAddress.email",
-      "contactAddress.website",
       "contactAddress.correspondenceAddress",
       "contactAddress.province",
       "contactAddress.city",
@@ -64,15 +74,30 @@ function Step2({ onNext, onBack }) {
 
     const allRequiredFilled = requiredFields.every(isFilled);
 
-    if (allRequiredFilled) {
-      if (checkValidation()) {
-        alert("Form submitted! Data: " + JSON.stringify(formData));
-      } else {
-        alert("Some field is not valid");
-      }
-    } else {
-      alert("Some field is required");
+    if (!allRequiredFilled) {
+      setModalContent({
+        title: "Warning!",
+        message: "Some fields are required.",
+      });
+      setIsModalOpen(true);
+      return;
     }
+
+    if (!checkValidation()) {
+      setModalContent({
+        title: "Validation Error",
+        message: "Some fields contain invalid data.",
+      });
+      setIsModalOpen(true);
+      return;
+    }
+
+    setModalContent2({
+      title: "Form Submitted!",
+      message: "Here is your submitted data:",
+      data: formData, // Kirim formData ke modal
+    });
+    setIsModalOpen2(true);
   };
 
   const handleChange = (section, field, value, index = null, index2 = null) => {
@@ -154,11 +179,25 @@ function Step2({ onNext, onBack }) {
 
       setErrors((prevErrors) => {
         const updatedErrors = { ...prevErrors };
-        const updatedPhoneNumbers = [
-          ...updatedErrors.picList[index].phoneNumber,
-        ];
-        updatedPhoneNumbers[index2] = errorMessage;
-        updatedErrors.picList[index].phoneNumber = updatedPhoneNumbers;
+
+        // Pastikan picList ada
+        if (!updatedErrors.picList) {
+          updatedErrors.picList = [];
+        }
+
+        // Pastikan picList[index] ada
+        if (!updatedErrors.picList[index]) {
+          updatedErrors.picList[index] = { phoneNumber: [] };
+        }
+
+        // Pastikan phoneNumber adalah array
+        if (!Array.isArray(updatedErrors.picList[index].phoneNumber)) {
+          updatedErrors.picList[index].phoneNumber = [];
+        }
+
+        // Update error message
+        updatedErrors.picList[index].phoneNumber[index2] = errorMessage;
+
         return updatedErrors;
       });
 
@@ -188,7 +227,7 @@ function Step2({ onNext, onBack }) {
         ...prevData,
         picList: [
           ...prevData.picList,
-          { name: "", role: "", gender: "", email: "", phoneNumber: [] },
+          { name: "", role: "", gender: "", email: "", phoneNumber: [""] },
         ],
       };
     });
@@ -465,7 +504,7 @@ function Step2({ onNext, onBack }) {
                         )}
                       </div>
 
-                      {errors?.picList[index]?.phoneNumber[PNIndex] && (
+                      {errors?.picList?.[index]?.phoneNumber?.[PNIndex] && (
                         <p className="text-red-500 text-sm">
                           {errors.picList[index].phoneNumber[PNIndex]}
                         </p>
@@ -616,6 +655,19 @@ function Step2({ onNext, onBack }) {
           </button>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={modalContent.title}
+        message={modalContent.message}
+      />
+      <DataShow
+        isOpen={isModalOpen2}
+        onClose={() => setIsModalOpen2(false)}
+        title={modalContent2.title}
+        message={modalContent2.message}
+        data={modalContent2.data}
+      />
     </div>
   );
 }
